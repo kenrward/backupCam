@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+# Modified code from http://jeremyblythe.blogspot.co.uk/2013/03/raspberry-pi-parking-camera-with.html
+# to use SainSmart Ultrasonic ranging module (HC - SR04)
+# and Raspi Camera from Element 14.  
 
 import RPi.GPIO as GPIO
 import time
@@ -36,9 +39,12 @@ def getDistance():
 	pulse_duration = pulse_end - pulse_start
 
 	distance = (pulse_duration * 13514.17)/2 #inches
-	GPIO.cleanup()
-	return(distance)
-
+	print(distance)
+	inch = int(round(distance))
+	print(inch)
+	return(inch)
+	
+	
 pygame.init()
 pygame.mouse.set_visible(False)
 lcd = pygame.display.set_mode((176,220))
@@ -59,33 +65,45 @@ surf = pygame.Surface(size)
 cam.start_preview()
 sleep(0.5)
 cam.capture('image.gif', format='gif', resize=(size))
-cam.stop_preview()
+#cam.stop_preview()
 
 img= pygame.image.load('image.gif')
 lcd.blit(img, (0,0))
 pygame.display.update()
 
-while True:
-    lcd.fill(BLACK)
-    cam.get_image(surf)
-    lcd.blit(surf, (0,0))
- 
-    dist = getDistance
-    colour = GREEN
-    if dist < 2:
-        colour = RED
-        text_surface = font_big.render('STOP', True, colour)
-        rect = text_surface.get_rect(center=(88,72))
-        lcd.blit(text_surface, rect)
- 
-    if dist < 140:
-        pygame.draw.circle(lcd, colour, (88,72), (150-dist)/2, 3)
-     
-    text_surface = font_big.render('%dcm'%dist, True, colour)
-    rect = text_surface.get_rect(center=(88,180))
-    lcd.blit(text_surface, rect)
- 
-    pygame.display.update()
+font_big = pygame.font.Font(None, 50)
+surf = pygame.Surface(size)
+try:
+	while True:
+		lcd.fill(BLACK)
+		cam.start_preview()
+		sleep(0.5)
+		cam.capture('image.gif', format='gif', resize=(size))
+		img= pygame.image.load('image.gif')
+		lcd.blit(img, (0,0))
+		#pygame.display.update()
 
-sleep(8)
-pygame.quit()
+
+		dist = getDistance()
+		colour = GREEN
+		if dist < 4:
+			colour = RED
+			text_surface = font_big.render('STOP', True, colour)
+			rect = text_surface.get_rect(center=(88,72))
+			lcd.blit(text_surface, rect)
+
+		if dist < 140:
+			pygame.draw.circle(lcd, colour, (88,72), (150-dist)/2, 3)
+		 
+		text_surface = font_big.render('%din'%dist, True, colour)
+		rect = text_surface.get_rect(center=(88,180))
+		lcd.blit(text_surface, rect)
+
+		pygame.display.update()
+
+	sleep(8)
+	pygame.quit()
+
+except KeyboardInterrupt:
+	GPIO.cleanup()
+	pygame.quit()
